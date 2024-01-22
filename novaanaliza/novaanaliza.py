@@ -1,17 +1,14 @@
-import os
 import matplotlib.pyplot as plt
 import numpy as np
-import openai
-
+from openai import OpenAI
+from dotenv import load_dotenv
 import pandas as pd
 import seaborn as sns
 import streamlit as st
 from matplotlib.ticker import PercentFormatter
-from dotenv import load_dotenv
 
 load_dotenv()
-
-openai.api_key = os.getenv("API_KEY")
+client = OpenAI()
 
 def truncate_text(text, max_length):
     if len(text) > max_length:
@@ -19,7 +16,7 @@ def truncate_text(text, max_length):
     return text
 
 
-def generate_recommendation(business_data, api_key):
+def generate_recommendation(business_data):
     # Generate prompt for ChatGPT based on reviews and sentiment scores
     prompt = ""
     for index, row in business_data.iterrows():
@@ -34,7 +31,7 @@ def generate_recommendation(business_data, api_key):
 
     # Generate completion using OpenAI API
     # client.api_key = 
-    response = openai.completions.create(
+    response = client.completions.create(
         model="gpt-3.5-turbo-instruct",
         prompt=prompt
         + "\nWrite me similar mail, that would get the same or higher sentiment score",
@@ -83,7 +80,7 @@ def main():
         required_columns = ["Review", "Sentiment Score"]
         if set(required_columns).issubset(business_data.columns):
             st.subheader("Business Recommendation")
-            recommendation = generate_recommendation(business_data, openai.api_key)
+            recommendation = generate_recommendation(business_data)
 
             # Display recommendation
             st.write("Summary Recommendation:")
