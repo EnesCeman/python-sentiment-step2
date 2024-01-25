@@ -1,12 +1,13 @@
 import os
-
 import matplotlib.pyplot as plt
 import numpy as np
-import openai
+from openai import OpenAI
 import pandas as pd
 import seaborn as sns
 import streamlit as st
 from matplotlib.ticker import PercentFormatter
+client = OpenAI()
+client.api_key = os.environ['OPENAI_API_KEY']
 
 
 def truncate_text(text, max_length):
@@ -15,7 +16,8 @@ def truncate_text(text, max_length):
     return text
 
 
-def generate_recommendation(business_data, api_key):
+def generate_recommendation(business_data):
+    
     # Generate prompt for ChatGPT based on reviews and sentiment scores
     prompt = ""
     for index, row in business_data.iterrows():
@@ -29,11 +31,11 @@ def generate_recommendation(business_data, api_key):
     prompt = truncate_text(prompt, 4096)
 
     # Generate completion using OpenAI API
-    openai.api_key = "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"
-    response = openai.Completion.create(
-        engine="gpt-3.5-turbo-instruct",
+    # client.api_key = 
+    response = client.completions.create(
+        model="gpt-3.5-turbo-instruct",
         prompt=prompt
-        + "\nRevwrite the parts that have a low sentiment score, and combine the rest into mail. Display also the original mail",
+        + "\nWrite me similar mail, that would get the same or higher sentiment score",
         max_tokens=974,  # Adjusted max_tokens for a longer response
     )
 
@@ -63,51 +65,51 @@ def plot_histogram(business_data):
 
 
 def main():
+    print(client.api_key)
     st.title("Mail Recommendation")
 
     # Upload CSV file
     file = st.file_uploader("Upload a CSV file", type=["csv"])
 
     if file is not None:
-        if not file.name.endswith(".csv"):
-            st.error("Error: Please upload a CSV file.")
-            return
-        try:
-            business_data = pd.read_csv(file)
+        if file is not None:
+            if not file.name.endswith(".csv"):
+                st.error("Error: Please upload a CSV file.")
+                return
+            try:
+                business_data = pd.read_csv(file)
 
-            # Display uploaded data
-            st.subheader("Uploaded Mail Data")
-            st.write(business_data)
+                # Display uploaded data
+                st.subheader("Uploaded Mail Data")
+                st.write(business_data)
 
-            # Check if required columns exist
-            required_columns = ["Review", "Sentiment Score"]
-            if set(required_columns).issubset(business_data.columns):
-                st.subheader("Mail Recommendation")
-                api_key = os.getenv("OPENAI_API_KEY")
-                recommendation = generate_recommendation(business_data, api_key)
+                # Check if required columns exist
+                required_columns = ["Review", "Sentiment Score"]
+                if set(required_columns).issubset(business_data.columns):
+                    st.subheader("Mail Recommendation")
+                    recommendation = generate_recommendation(business_data)
 
-                # Display recommendation
-                st.write("Summary Recommendation:")
-                st.write(str(recommendation))  # Convert recommendation to string
-                # Display Mail
-                st.subheader("Mail Content:")
-                mail_content = "\n".join(
-                    f"{index + 1}. {row['Review']}"
-                    for index, row in business_data.iterrows()
-                )
-                st.text(mail_content)
-                # Plot relative frequency histogram
-                st.subheader("Sentiment Score Distribution")
-                plot_histogram(business_data)
-            else:
-                st.write(
-                    "Error: The uploaded CSV file does not contain all the required columns."
-                )
-        except pd.errors.EmptyDataError:
-            st.error("Error: The uploaded CSV file is empty.")
-        except Exception as e:
-            st.error(f"An error occured: {e}")
-
+                    # Display recommendation
+                    st.write("Summary Recommendation:")
+                    st.write(str(recommendation))  # Convert recommendation to string
+                    # Display Mail
+                    st.subheader("Mail Content:")
+                    mail_content = "\n".join(
+                        f"{index + 1}. {row['Review']}"
+                        for index, row in business_data.iterrows()
+                    )
+                    st.text(mail_content)
+                    # Plot relative frequency histogram
+                    st.subheader("Sentiment Score Distribution")
+                    plot_histogram(business_data)
+                else:
+                    st.write(
+                        "Error: The uploaded CSV file does not contain all the required columns."
+                    )
+            except pd.errors.EmptyDataError:
+                st.error("Error: The uploaded CSV file is empty.")
+            except Exception as e:
+                st.error(f"An error occured: {e}")
 
 if __name__ == "__main__":
     main()
