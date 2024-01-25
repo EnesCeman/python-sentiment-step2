@@ -2,13 +2,14 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from openai import OpenAI
+from dotenv import load_dotenv, find_dotenv
 import pandas as pd
 import seaborn as sns
 import streamlit as st
 from matplotlib.ticker import PercentFormatter
-client = OpenAI()
-client.api_key = os.environ['OPENAI_API_KEY']
 
+load_dotenv(find_dotenv())
+client = OpenAI()
 
 def truncate_text(text, max_length):
     if len(text) > max_length:
@@ -65,7 +66,6 @@ def plot_histogram(business_data):
 
 
 def main():
-    print(client.api_key)
     st.title("Mail Recommendation")
 
     # Upload CSV file
